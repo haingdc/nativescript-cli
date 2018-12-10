@@ -1,3 +1,7 @@
+import { track } from "temp";
+
+const { performance } = require('perf_hooks');
+
 /**
  * Caches the result of the first execution of the method and returns it whenever it is called instead of executing it again.
  * Works with methods and getters.
@@ -82,4 +86,44 @@ export function exported(moduleName: string): any {
 
 		return descriptor;
 	};
+}
+
+export function performanceLog(injector?: IInjector): any {
+	injector = injector || $injector;
+	return function (target: any, propertyKey: string, descriptor: PropertyDescriptor): any {
+		const originalMethod = descriptor.value;
+		const className = target.constructor.name;
+
+		descriptor.value = function (...args: Array<any>) {
+			const start = performance.now();
+			const result = originalMethod.apply(this, args);
+			let end;
+			const resolvedPromise = Promise.resolve(result);
+			const analyticsService: IAnalyticsService = injector.resolve("analyticsService");
+
+			const track = (methodData: string, value: number) => {
+				analyticsService.trackEventActionInGoogleAnalytics({
+					action: "Perf",
+					additionalData: methodData,
+					value
+				});
+			}
+			if(resolvedPromise !== result) {
+				end = performance.now();
+				console.log(`Call to ${className}.${propertyKey} took ${(end - start).toFixed()} milliseconds.`);
+			} else {
+				resolvedPromise.then(() => {
+					end = performance.now();
+					console.log(`Call to ${className}.${propertyKey} took ${(end - start).toFixed()} milliseconds.`);
+				}, () => {
+					end = performance.now();
+					console.log(`Call to ${className}.${propertyKey} took ${(end - start).toFixed()} milliseconds.`);
+				});
+
+			}
+			return result;
+		};
+
+		return descriptor;
+	}
 }

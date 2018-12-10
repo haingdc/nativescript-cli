@@ -9,6 +9,7 @@ import { EventEmitter } from "events";
 import { AppFilesUpdater } from "./app-files-updater";
 import { attachAwaitDetach } from "../common/helpers";
 import * as temp from "temp";
+import { performanceLog } from ".././common/decorators";
 temp.track();
 
 const buildInfoFileName = ".nsbuildinfo";
@@ -401,6 +402,7 @@ export class PlatformService extends EventEmitter implements IPlatformService {
 		return prepareInfo.changesRequireBuildTime !== buildInfo.prepareTime;
 	}
 
+	//@performanceLog()
 	public async buildPlatform(platform: string, buildConfig: IBuildConfig, projectData: IProjectData): Promise<string> {
 		this.$logger.out("Building project...");
 
